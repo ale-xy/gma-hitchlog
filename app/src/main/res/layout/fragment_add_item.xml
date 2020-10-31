@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools">
+    <data>
+        <variable name="viewModel" type="org.gmautostop.hitchlog.HitchLogViewModel"/>
+        <variable name="recordModel" type="org.gmautostop.hitchlog.RecordViewModel"/>
+
+    </data>
+
+    <FrameLayout
+                 android:layout_width="match_parent"
+                 android:layout_height="match_parent"
+                 tools:context=".AddItemFragment">
+
+
+        <LinearLayout android:layout_width="match_parent"
+                      android:layout_height="match_parent"
+                        android:orientation="vertical">
+            <TextView android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      style="@style/AddItemHeader"
+                      android:text="@{recordModel.record.type.text}"/>
+
+            <EditText
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@={recordModel.date}"
+            />
+            <EditText
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@={recordModel.time}"
+            />
+            <EditText
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@={recordModel.text}"
+            />
+            <Button android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@android:string/ok"
+                    android:onClick="@{() -> viewModel.saveRecordAndGoBack(recordModel.getRecord())}"
+            />
+
+        </LinearLayout>
+
+    </FrameLayout>
+</layout>

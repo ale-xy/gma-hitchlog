@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            xmlns:tools="http://schemas.android.com/tools" android:id="@+id/nav"
+            app:startDestination="@id/hitchlogFragment">
+    <fragment android:id="@+id/hitchlogFragment"
+            android:name="org.gmautostop.hitchlog.HitchLogFragment"
+            android:label="fragment_hitchlog"
+            tools:layout="@layout/fragment_hitchlog">
+        <action android:id="@+id/action_hitchlog_to_addItem"
+                app:destination="@id/addItemFragment"/>
+    </fragment>
+
+    <fragment android:id="@+id/addItemFragment"
+            android:name="org.gmautostop.hitchlog.AddItemFragment"
+            android:label="fragment_add_item"
+            tools:layout="@layout/fragment_add_item">
+        <action android:id="@+id/action_addItem_to_hitchlog"
+                app:destination="@id/hitchlogFragment"/>
+        <argument android:name="recordType"
+                  app:argType="org.gmautostop.hitchlog.HitchLogRecordType"
+                  android:defaultValue="FREE_TEXT"
+        />
+    </fragment>
+
+</navigation>

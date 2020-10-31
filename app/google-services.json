@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "490495861011",
+    "firebase_url": "https://hitchlog-4d5e4.firebaseio.com",
+    "project_id": "hitchlog-4d5e4",
+    "storage_bucket": "hitchlog-4d5e4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:490495861011:android:1ddc277a4748f7b63e7ae6",
+        "android_client_info": {
+          "package_name": "org.gmautostop.hitchlog"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "490495861011-3vngsi4025m4nn6hr3rt7poslo0e519j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.gmautostop.hitchlog",
+            "certificate_hash": "52822db23344dab8371622507d11b252643e7677"
+          }
+        },
+        {
+          "client_id": "490495861011-o8eeiv6mq5uqkqamdcbai6sopsr22riq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBKvVj9xmq7ze_XQkKh-4c3g9VFGW_DoMQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "490495861011-o8eeiv6mq5uqkqamdcbai6sopsr22riq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
