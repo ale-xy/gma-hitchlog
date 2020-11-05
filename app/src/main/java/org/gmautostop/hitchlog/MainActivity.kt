@@ -3,14 +3,22 @@ package org.gmautostop.hitchlog
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
+import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.navigation.NavController
+import androidx.navigation.NavDestination
+import androidx.navigation.findNavController
 import com.google.android.material.navigation.NavigationView
+import dagger.hilt.android.AndroidEntryPoint
 
-class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
+@AndroidEntryPoint
+class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener,
+    NavController.OnDestinationChangedListener {
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,6 +36,22 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         toggle.syncState()
 
         navView.setNavigationItemSelectedListener(this)
+
+        findNavController(R.id.nav_host_fragment).addOnDestinationChangedListener(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        findNavController(R.id.nav_host_fragment).removeOnDestinationChangedListener(this)
+    }
+
+    override fun onDestinationChanged(controller: NavController, destination: NavDestination, arguments: Bundle?) {
+        currentFocus?.hideKeyboard()
+    }
+
+    private fun View.hideKeyboard() {
+        val imm = context.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(windowToken, 0)
     }
 
     override fun onBackPressed() {

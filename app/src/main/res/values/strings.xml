@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">GMA Hitchlog</string>
-    <string name="title_activity_main2">Main2Activity</string>
+    <string name="title_activity_main2">GMA Hitchlog</string>
+
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="nav_header_title">Android Studio</string>
@@ -8,18 +9,21 @@
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
 
-    <string name="menu_home">Home</string>
-    <string name="menu_gallery">Gallery</string>
-    <string name="menu_slideshow">Slideshow</string>
-    <string name="menu_tools">Tools</string>
-    <string name="menu_share">Share</string>
-    <string name="menu_send">Send</string>
-
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
-
+    <string name="delete">Удалить</string>
 
     <string name="start">Старт</string>
+    <string name="lift">Посадка</string>
+    <string name="get_off">Выход</string>
+    <string name="walk">ППХ</string>
+    <string name="walk_end">Конец ППХ</string>
+    <string name="checkpoint">КП</string>
+    <string name="meet">Встреча</string>
+    <string name="rest_on">Rest on</string>
+    <string name="rest_off">Rest off</string>
+    <string name="offside_on">Вне игры</string>
+    <string name="offside_off">Вне игры off</string>
+    <string name="finish">Финиш</string>
+    <string name="retire">Сход</string>
     <string name="free_text">Прочее</string>
 
 </resources>

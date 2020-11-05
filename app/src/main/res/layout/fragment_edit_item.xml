@@ -2,15 +2,14 @@
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools">
     <data>
-        <variable name="viewModel" type="org.gmautostop.hitchlog.HitchLogViewModel"/>
+        <import type="android.view.View"/>
         <variable name="recordModel" type="org.gmautostop.hitchlog.RecordViewModel"/>
-
     </data>
 
     <FrameLayout
                  android:layout_width="match_parent"
                  android:layout_height="match_parent"
-                 tools:context=".AddItemFragment">
+                 tools:context=".EditItemFragment">
 
 
         <LinearLayout android:layout_width="match_parent"
@@ -18,7 +17,7 @@
                         android:orientation="vertical">
             <TextView android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      style="@style/AddItemHeader"
+                      style="@style/LogItemHeader"
                       android:text="@{recordModel.record.type.text}"/>
 
             <EditText
@@ -34,13 +33,26 @@
             <EditText
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
                     android:text="@={recordModel.text}"
             />
-            <Button android:layout_width="wrap_content"
+            <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@android:string/ok"
-                    android:onClick="@{() -> viewModel.saveRecordAndGoBack(recordModel.getRecord())}"
-            />
+                    android:orientation="horizontal">
+
+                <Button android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@android:string/ok"
+                        android:onClick="@{() -> recordModel.saveRecordAndGoBack(recordModel.getRecord())}"
+                        />
+                <Button android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/delete"
+                        android:visibility="@{recordModel.existingRecord? View.VISIBLE : View.GONE}"
+                        android:onClick="@{() -> recordModel.deleteRecordAndGoBack(recordModel.getRecord())}"
+                        />
+            </LinearLayout>
 
         </LinearLayout>
 

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android">
     <data>
+        <variable name="viewModel" type="org.gmautostop.hitchlog.HitchLogViewModel"/>
         <variable name="record" type="org.gmautostop.hitchlog.HitchLogRecord"/>
         <variable name="time" type="String"/>
         <variable name="type" type="String"/>
@@ -9,7 +10,10 @@
     <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            style="@style/LogItem"
+            android:onClick="@{() -> viewModel.goToEditFragment(record)}"
+            >
         <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

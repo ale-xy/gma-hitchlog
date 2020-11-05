@@ -8,11 +8,15 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navGraphViewModels
+import dagger.hilt.android.AndroidEntryPoint
 import org.gmautostop.hitchlog.databinding.FragmentHitchlogBinding
 
+@AndroidEntryPoint
 class HitchLogFragment : Fragment() {
 
-    private val viewModel: HitchLogViewModel by navGraphViewModels(R.id.nav)
+    private val viewModel: HitchLogViewModel by navGraphViewModels(R.id.nav){
+        defaultViewModelProviderFactory
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,

@@ -26,18 +26,15 @@
                 app:itemBinding="@{viewModel.recordBinding}"
                 app:items="@{viewModel.records()}"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-
-        />
-        <Button android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Start"
-                android:onClick="@{() -> viewModel.goToAddFragment(HitchLogRecordType.START)}"
-        />
-        <Button android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Free text"
-                android:onClick="@{() -> viewModel.goToAddFragment(HitchLogRecordType.FREE_TEXT)}"
         />
 
+        <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/buttons"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:itemBinding="@{viewModel.buttonBinding}"
+                app:items="@{viewModel.recordTypes}"
+                app:layoutManager=".util.ButtonLayoutManager"
+        />
     </LinearLayout>
 </layout>

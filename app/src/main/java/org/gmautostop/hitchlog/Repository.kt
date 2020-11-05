@@ -6,8 +6,9 @@ import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.EventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
+import javax.inject.Inject
 
-class FirestoreRepository {
+class FirestoreRepository @Inject constructor(){
     init {
         FirebaseFirestore.setLoggingEnabled(true)
     }
@@ -57,11 +58,19 @@ class FirestoreRepository {
         } ?: Log.e("HitchLogViewModel", "No current log")
     }
 
+    fun deleteRecord(record: HitchLogRecord) {
+        currentLogId?.let {
+            logRecords(it).document(record.id).delete()
+        } ?: Log.e("HitchLogViewModel", "No current log")
+    }
+
     fun saveRecord(record: HitchLogRecord) {
         when {
             record.id.isEmpty() -> addRecord(record)
             else -> updateRecord(record)
         }
     }
+
+
 
 }
