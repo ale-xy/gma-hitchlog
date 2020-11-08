@@ -1,30 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:app="http://schemas.android.com/apk/res-auto"
-            xmlns:tools="http://schemas.android.com/tools" android:id="@+id/nav"
-            app:startDestination="@id/hitchlogFragment">
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools" android:id="@+id/nav"
+        app:startDestination="@id/authFragment">
+    <fragment
+            android:id="@+id/authFragment"
+            android:name="org.gmautostop.hitchlog.AuthFragment"
+            android:label="AuthFragment" >
+        <action
+                android:id="@+id/action_authFragment_to_hitchlogFragment"
+                app:destination="@id/hitchlogFragment" />
+        <action
+                android:id="@+id/action_authFragment_to_logListFragment"
+                app:destination="@id/logListFragment" />
+    </fragment>
+
     <fragment android:id="@+id/hitchlogFragment"
             android:name="org.gmautostop.hitchlog.HitchLogFragment"
             android:label="fragment_hitchlog"
             tools:layout="@layout/fragment_hitchlog">
         <action android:id="@+id/action_hitchlog_to_editItem"
                 app:destination="@id/editItemFragment"/>
+        <argument
+                android:name="logId"
+                app:argType="string" />
     </fragment>
 
     <fragment android:id="@+id/editItemFragment"
-            android:name="org.gmautostop.hitchlog.EditItemFragment"
+            android:name="org.gmautostop.hitchlog.EditRecordFragment"
             android:label="fragment_edit_item"
-            tools:layout="@layout/fragment_edit_item">
-        <action android:id="@+id/action_finish_editing"
-                app:destination="@id/hitchlogFragment"
-                app:popUpTo="@id/hitchlogFragment"/>
+            tools:layout="@layout/fragment_edit_record">
+        <action android:id="@+id/action_finish_editing_record"
+                app:popUpTo="@id/hitchlogFragment"
+                />
         <argument android:name="recordType"
-                  app:argType="org.gmautostop.hitchlog.HitchLogRecordType"
-                  android:defaultValue="FREE_TEXT" />
+                app:argType="org.gmautostop.hitchlog.HitchLogRecordType"
+                android:defaultValue="FREE_TEXT" />
         <argument android:name="record"
                 app:argType="org.gmautostop.hitchlog.HitchLogRecord"
                 app:nullable="true"
                 android:defaultValue="@null"/>
     </fragment>
+    <fragment
+            android:id="@+id/logListFragment"
+            android:name="org.gmautostop.hitchlog.LogListFragment"
+            android:label="LogListFragment" >
+        <action
+                android:id="@+id/action_logListFragment_to_editLogFragment"
+                app:destination="@id/editLogFragment" />
+        <action
+                android:id="@+id/action_logListFragment_to_hitchlogFragment"
+                app:destination="@id/hitchlogFragment" />
+    </fragment>
+    <fragment
+            android:id="@+id/editLogFragment"
+            android:name="org.gmautostop.hitchlog.EditLogFragment"
+            android:label="EditLogFragment" >
+        <action android:id="@+id/action_finish_editing_log"
+                app:popUpTo="@id/logListFragment"
+                />
+        <argument android:name="logName"
+                app:argType="string"
+                app:nullable="true"
+                android:defaultValue="@null"
+                />
+        <argument android:name="logId"
+                app:argType="string"
+                app:nullable="true"
+                android:defaultValue="@null"
+                />
+    </fragment>
+
 
 </navigation>

@@ -29,9 +29,8 @@ class HitchLogViewModel @ViewModelInject constructor(
         get() = repository.currentLogId
         set(value) { repository.currentLogId = value }
 
-    var log: Hitchlog?
+    val log: HitchLog?
         get() = repository.currentLog
-        set(value) { repository.currentLog = value }
 
     fun records() = repository.recordsLiveData
 
@@ -48,7 +47,7 @@ class HitchLogViewModel @ViewModelInject constructor(
     val recordTypes = HitchLogRecordType.values().asList()
 
     val recordBinding = ItemBinding.of<HitchLogRecord> { itemBinding, _, item ->
-        itemBinding.set(BR.record, R.layout.log_item)
+        itemBinding.set(BR.record, R.layout.log_record_item)
             .bindExtra(BR.type, application.resources.getString(item.type.text))
             .bindExtra(BR.time, timeFormat.format(item.time))
             .bindExtra(BR.text, item.text)
@@ -108,16 +107,70 @@ class RecordViewModel @ViewModelInject constructor(repository: FirestoreReposito
 
     fun saveRecordAndGoBack(record: HitchLogRecord) {
         save(record)
-        navigate(EditItemFragmentDirections.actionFinishEditing())
+        navigate(EditRecordFragmentDirections.actionFinishEditingRecord())
     }
 
     fun deleteRecordAndGoBack(record: HitchLogRecord) {
         //todo confirm
         delete(record)
-        navigate(EditItemFragmentDirections.actionFinishEditing())
+        navigate(EditRecordFragmentDirections.actionFinishEditingRecord())
     }
 }
 
-//class AuthViewModel(application: Application, repository: FirestoreRepository): NavViewModel(application, repository) {
-//
-//}
+class AuthViewModel @ViewModelInject constructor(repository: FirestoreRepository): NavViewModel(repository) {
+    val signedIn
+        get() = repository.user.value != null
+
+    val userName
+        get() = repository.user.value?.displayName
+}
+
+class LogListViewModel @ViewModelInject constructor(repository: FirestoreRepository): NavViewModel(repository) {
+    init {
+        repository.user.value?.uid?.let {
+            repository.getUserLogs(it)
+        }
+    }
+
+    fun logs() = repository.userLogsLiveData
+
+    val logBinding = ItemBinding.of<HitchLog> { itemBinding, _, item ->
+        itemBinding.set(BR.log, R.layout.logs_list_item)
+            .bindExtra(BR.text, item.name)
+            .bindExtra(BR.viewModel, this)
+    }
+
+    fun goToAddFragment() {
+        navigate(LogListFragmentDirections.actionLogListFragmentToEditLogFragment())
+    }
+
+    fun goToEditFragment(log: HitchLog) {
+        navigate(LogListFragmentDirections.actionLogListFragmentToEditLogFragment(logId = log.id, logName = log.name))
+    }
+
+    fun openLog(log: HitchLog) {
+        navigate(LogListFragmentDirections.actionLogListFragmentToHitchlogFragment(log.id))
+    }
+}
+
+class EditLogViewModel @ViewModelInject constructor(repository: FirestoreRepository): NavViewModel(repository) {
+    lateinit var id: String
+    lateinit var name: String
+
+    fun saveLogAndGoBack() {
+        when {
+            id.isEmpty() -> {
+                repository.user.value?.uid?.let {
+                    repository.addLog(HitchLog(name = this.name, userId = it))
+                }
+            }
+            else -> repository.updateLogName(id = id, name = name)
+        }
+        navigate(EditLogFragmentDirections.actionFinishEditingLog())
+    }
+
+    fun deleteLogAndGoBack() {
+        repository.deleteLog(id)
+        navigate(EditLogFragmentDirections.actionFinishEditingLog())
+    }
+}

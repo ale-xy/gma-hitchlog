@@ -24,12 +24,13 @@ inline fun <reified T : HasId> QuerySnapshot.toObjectsWithId(): List<T> {
     }
 }
 
-data class Hitchlog(
+data class HitchLog(
     @get:Exclude
     override var id: String = "",
     val userId: String = "",
     val raceId: String = "",
     val teamId: String? = null,
+    val name: String? = null,
     @Exclude
     val records: List<HitchLogRecord> = arrayListOf()
 ) : HasId
