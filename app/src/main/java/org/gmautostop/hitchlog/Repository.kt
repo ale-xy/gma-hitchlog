@@ -1,5 +1,6 @@
 package org.gmautostop.hitchlog
 
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.google.firebase.auth.FirebaseAuth
@@ -8,6 +9,8 @@ import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.EventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
+import java.text.SimpleDateFormat
+import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -41,7 +44,7 @@ class FirestoreRepository @Inject constructor(){
 
                 userLogsLiveData.value = value?.map { item ->
                     item.toObjectWithId<HitchLog>()
-                }
+                }?.sortedByDescending { it.creationTime }
             }
     }
 
@@ -73,6 +76,7 @@ class FirestoreRepository @Inject constructor(){
             field = value
             currentLogId = value?.id
         }
+        get() = userLogsLiveData.value?.find { it.id == currentLogId }
 
     var currentLogId: String? = null
         set(value) {
@@ -121,4 +125,10 @@ class FirestoreRepository @Inject constructor(){
             else -> updateRecord(record)
         }
     }
+}
+
+@SuppressLint("SimpleDateFormat")
+fun Date.toMinutes(): Date {
+    val dateTimeFormat = SimpleDateFormat("dd.MM.yyyy hh:mm")
+    return dateTimeFormat.parse(dateTimeFormat.format(this))!!
 }

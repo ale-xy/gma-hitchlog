@@ -18,7 +18,7 @@
             <TextView android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
                       style="@style/LogItemHeader"
-                      android:text="@{recordModel.record.type.text}"/>
+                      android:text="@{recordModel.type.text}"/>
 
             <EditText
                     android:layout_width="match_parent"
@@ -49,7 +49,7 @@
                 <Button android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/delete"
-                        android:visibility="@{recordModel.existingRecord? View.VISIBLE : View.GONE}"
+                        android:visibility="@{recordModel.existingRecord != null? View.VISIBLE : View.GONE}"
                         android:onClick="@{() -> recordModel.deleteRecordAndGoBack(recordModel.getRecord())}"
                         />
             </LinearLayout>

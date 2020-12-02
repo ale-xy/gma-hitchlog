@@ -42,6 +42,7 @@ class HitchLogViewModel @ViewModelInject constructor(
         navigate(HitchLogFragmentDirections.actionHitchlogToEditItem(record = record))
     }
 
+    @SuppressLint("SimpleDateFormat")
     private val timeFormat = SimpleDateFormat("hh:mm")
 
     val recordTypes = HitchLogRecordType.values().asList()
@@ -60,7 +61,6 @@ class HitchLogViewModel @ViewModelInject constructor(
             .bindExtra(BR.viewModel, this)
     }
 }
-
 @SuppressLint("SimpleDateFormat")
 class RecordViewModel @ViewModelInject constructor(repository: FirestoreRepository,
                                                    @Assisted private val savedStateHandle: SavedStateHandle): NavViewModel(repository){
@@ -74,11 +74,11 @@ class RecordViewModel @ViewModelInject constructor(repository: FirestoreReposito
     lateinit var time : String
     lateinit var text : String
 
-    var existingRecord: Boolean = false
+    var existingRecord: HitchLogRecord? = null
 
     fun initialize(record: HitchLogRecord) {
         reset()
-        existingRecord = true
+        existingRecord = record
         type = record.type
         id = record.id
         date = dateFormat.format(record.time)
@@ -88,18 +88,38 @@ class RecordViewModel @ViewModelInject constructor(repository: FirestoreReposito
 
     fun initialize(type: HitchLogRecordType) {
         reset()
-        existingRecord = false
         this.type = type
     }
 
-    fun reset() {
+    private fun reset() {
         id = ""
         date = dateFormat.format(Date())
         time = timeFormat.format(Date())
         text = ""
     }
 
-    fun getRecord() : HitchLogRecord = HitchLogRecord(id, dateTimeFormat.parse("$date $time")!!, type, text)
+    fun getRecord() : HitchLogRecord {
+        val enteredTime: Date = dateTimeFormat.parse("$date $time")!!
+
+        val newTime: Date =
+            existingRecord?.time?.let {
+                when (it.toMinutes()) {
+                    enteredTime -> it
+                    else -> getNextTime(enteredTime)
+                }
+            } ?: getNextTime(enteredTime)
+
+        return HitchLogRecord(id, newTime, type, text)
+    }
+
+    private fun getNextTime(enteredTime: Date): Date {
+        return repository.recordsLiveData.value?.filter {
+                    it.time.toMinutes() == enteredTime
+                }?.maxBy { it.time }?.time?.addSecond()
+            ?: enteredTime
+    }
+
+    private fun Date.addSecond(): Date = Date(time + 1000)
 
     fun save(item: HitchLogRecord) = repository.saveRecord(item)
 

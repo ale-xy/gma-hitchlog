@@ -13,9 +13,10 @@
             tools:context=".HitchLogFragment">
 
         <TextView
+                style="@style/LogItemHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@{viewModel.log.raceId}"
+                android:text="@{viewModel.log.name}"
         />
 
         <androidx.recyclerview.widget.RecyclerView

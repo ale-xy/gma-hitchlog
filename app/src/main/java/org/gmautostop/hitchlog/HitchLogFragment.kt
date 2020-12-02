@@ -38,11 +38,3 @@ class HitchLogFragment : Fragment() {
         return binding.root
     }
 }
-
-//class HichLogAdapter(private val data: List<HitchLogRecord>) : RecyclerBaseAdapter() {
-//    override fun getLayoutIdForPosition(position: Int) = R.layout.log_item
-//
-//    override fun getViewModel(position: Int) = ListItemViewModel(data[position])
-//
-//    override fun getItemCount() = data.size
-//}

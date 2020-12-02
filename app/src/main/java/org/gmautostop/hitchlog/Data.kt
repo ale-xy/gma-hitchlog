@@ -31,8 +31,7 @@ data class HitchLog(
     val raceId: String = "",
     val teamId: String? = null,
     val name: String? = null,
-    @Exclude
-    val records: List<HitchLogRecord> = arrayListOf()
+    val creationTime: Long = Date().time
 ) : HasId
 
 open class HitchLogRecord(
