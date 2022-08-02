@@ -5,6 +5,17 @@
       <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" />
     </configurations>
   </component>
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="../../../../layout/compose-model-1659440803853.xml" value="0.5" />
+        <entry key="app/src/main/res/layout/fragment_edit_log.xml" value="0.15443840579710144" />
+        <entry key="app/src/main/res/layout/fragment_hitchlog.xml" value="0.15443840579710144" />
+        <entry key="app/src/main/res/layout/nav_header_main.xml" value="0.15443840579710144" />
+        <entry key="app/src/main/res/layout/record_type_button.xml" value="0.15443840579710144" />
+      </map>
+    </option>
+  </component>
   <component name="ProjectInspectionProfilesVisibleTreeState">
     <entry key="Project Default">
       <profile-state>
@@ -30,7 +41,7 @@
       </profile-state>
     </entry>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" project-jdk-name="1.8" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/build/classes" />
   </component>
   <component name="ProjectType">

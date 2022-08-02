@@ -5,7 +5,6 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.InputMethodManager
-import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
@@ -28,14 +27,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         setSupportActionBar(toolbar)
 
         val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
-        val navView: NavigationView = findViewById(R.id.nav_view)
-        val toggle = ActionBarDrawerToggle(
-            this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close
-        )
-        drawerLayout.addDrawerListener(toggle)
-        toggle.syncState()
-
-        navView.setNavigationItemSelectedListener(this)
+//        val navView: NavigationView = findViewById(R.id.nav_view)
+//        val toggle = ActionBarDrawerToggle(
+//            this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close
+//        )
+//        drawerLayout.addDrawerListener(toggle)
+//        toggle.syncState()
+//
+//        navView.setNavigationItemSelectedListener(this)
 
         findNavController(R.id.nav_host_fragment).addOnDestinationChangedListener(this)
     }

@@ -23,7 +23,7 @@ class EditLogFragment : Fragment(R.layout.fragment_edit_log) {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
 
         viewModel.id = args.logId ?: ""
         viewModel.name = args.logName ?: ""

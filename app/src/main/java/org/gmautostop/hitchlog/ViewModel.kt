@@ -2,15 +2,14 @@ package org.gmautostop.hitchlog
 
 import android.annotation.SuppressLint
 import android.app.Application
-import androidx.hilt.Assisted
-import androidx.hilt.lifecycle.ViewModelInject
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.navigation.NavDirections
+import dagger.hilt.android.lifecycle.HiltViewModel
 import me.tatarka.bindingcollectionadapter2.ItemBinding
 import org.gmautostop.hitchlog.util.SingleLiveEvent
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.inject.Inject
 
 open class NavViewModel(val repository: FirestoreRepository): ViewModel() {
     val navigationCommands: SingleLiveEvent<NavDirections> = SingleLiveEvent()
@@ -20,10 +19,10 @@ open class NavViewModel(val repository: FirestoreRepository): ViewModel() {
     }
 }
 
-class HitchLogViewModel @ViewModelInject constructor(
+@HiltViewModel
+class HitchLogViewModel @Inject constructor(
     private val application: Application,
-    repository: FirestoreRepository,
-    @Assisted private val savedStateHandle: SavedStateHandle) : NavViewModel(repository) {
+    repository: FirestoreRepository) : NavViewModel(repository) {
 
     var logId :String?
         get() = repository.currentLogId
@@ -62,8 +61,8 @@ class HitchLogViewModel @ViewModelInject constructor(
     }
 }
 @SuppressLint("SimpleDateFormat")
-class RecordViewModel @ViewModelInject constructor(repository: FirestoreRepository,
-                                                   @Assisted private val savedStateHandle: SavedStateHandle): NavViewModel(repository){
+@HiltViewModel
+class RecordViewModel @Inject constructor(repository: FirestoreRepository): NavViewModel(repository){
     private val dateFormat = SimpleDateFormat("dd.MM.yyyy")
     private val timeFormat = SimpleDateFormat("hh:mm")
     private val dateTimeFormat = SimpleDateFormat("dd.MM.yyyy hh:mm")
@@ -115,7 +114,7 @@ class RecordViewModel @ViewModelInject constructor(repository: FirestoreReposito
     private fun getNextTime(enteredTime: Date): Date {
         return repository.recordsLiveData.value?.filter {
                     it.time.toMinutes() == enteredTime
-                }?.maxBy { it.time }?.time?.addSecond()
+                }?.maxByOrNull { it.time }?.time?.addSecond()
             ?: enteredTime
     }
 
@@ -137,7 +136,8 @@ class RecordViewModel @ViewModelInject constructor(repository: FirestoreReposito
     }
 }
 
-class AuthViewModel @ViewModelInject constructor(repository: FirestoreRepository): NavViewModel(repository) {
+@HiltViewModel
+class AuthViewModel @Inject constructor(repository: FirestoreRepository): NavViewModel(repository) {
     val signedIn
         get() = repository.user.value != null
 
@@ -145,7 +145,8 @@ class AuthViewModel @ViewModelInject constructor(repository: FirestoreRepository
         get() = repository.user.value?.displayName
 }
 
-class LogListViewModel @ViewModelInject constructor(repository: FirestoreRepository): NavViewModel(repository) {
+@HiltViewModel
+class LogListViewModel @Inject constructor(repository: FirestoreRepository): NavViewModel(repository) {
     init {
         repository.user.value?.uid?.let {
             repository.getUserLogs(it)
@@ -173,7 +174,8 @@ class LogListViewModel @ViewModelInject constructor(repository: FirestoreReposit
     }
 }
 
-class EditLogViewModel @ViewModelInject constructor(repository: FirestoreRepository): NavViewModel(repository) {
+@HiltViewModel
+class EditLogViewModel @Inject constructor(repository: FirestoreRepository): NavViewModel(repository) {
     lateinit var id: String
     lateinit var name: String
 
