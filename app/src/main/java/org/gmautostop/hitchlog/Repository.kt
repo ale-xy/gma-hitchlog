@@ -38,7 +38,7 @@ class FirestoreRepository @Inject constructor(){
             .addSnapshotListener { value, error ->
                 error?.let { e ->
                     Log.e("Repository", e.message.orEmpty())
-                    userLogsLiveData.value = null
+                    userLogsLiveData.value = listOf()
                     return@addSnapshotListener
                 }
 
@@ -47,6 +47,7 @@ class FirestoreRepository @Inject constructor(){
                 }?.sortedByDescending { it.creationTime }
             }
     }
+
 
     fun addLog(log: HitchLog) {
         logs().add(log)

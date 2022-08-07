@@ -14,7 +14,7 @@ import org.gmautostop.hitchlog.databinding.FragmentLogListBinding
 @AndroidEntryPoint
 class LogListFragment : Fragment() {
 
-    private val viewModel: LogListViewModel by navGraphViewModels(R.id.nav){
+    private val viewModel: LogListOldViewModel by navGraphViewModels(R.id.nav){
         defaultViewModelProviderFactory
     }
     override fun onCreateView(

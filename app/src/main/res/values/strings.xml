@@ -15,6 +15,8 @@
     <string name="create">Создать</string>
     <string name="delete">Удалить</string>
 
+    <string name="name">Название</string>
+
     <string name="start">Старт</string>
     <string name="lift">Посадка</string>
     <string name="get_off">Выход</string>

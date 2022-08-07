@@ -29,8 +29,8 @@ data class HitchLog(
     override var id: String = "",
     val userId: String = "",
     val raceId: String = "",
-    val teamId: String? = null,
-    val name: String? = null,
+    val teamId: String = "",
+    val name: String = "",
     val creationTime: Long = Date().time
 ) : HasId
 

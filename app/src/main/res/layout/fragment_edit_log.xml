@@ -2,7 +2,7 @@
 <layout xmlns:android="http://schemas.android.com/apk/res/android">
     <data>
         <import type="android.view.View"/>
-        <variable name="editLogModel" type="org.gmautostop.hitchlog.EditLogViewModel"/>
+        <variable name="editLogModel" type="org.gmautostop.hitchlog.EditLogOldViewModel"/>
     </data>
     <LinearLayout android:layout_width="match_parent"
             android:layout_height="match_parent"

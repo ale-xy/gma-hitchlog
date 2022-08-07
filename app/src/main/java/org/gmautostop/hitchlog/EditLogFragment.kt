@@ -14,7 +14,7 @@ import org.gmautostop.hitchlog.databinding.FragmentEditLogBinding
 
 @AndroidEntryPoint
 class EditLogFragment : Fragment(R.layout.fragment_edit_log) {
-    private val viewModel: EditLogViewModel by navGraphViewModels(R.id.nav) {
+    private val viewModel: EditLogOldViewModel by navGraphViewModels(R.id.nav) {
         defaultViewModelProviderFactory
     }
 

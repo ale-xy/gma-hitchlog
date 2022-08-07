@@ -2,6 +2,7 @@ package org.gmautostop.hitchlog
 
 import android.annotation.SuppressLint
 import android.app.Application
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.navigation.NavDirections
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -146,7 +147,18 @@ class AuthViewModel @Inject constructor(repository: FirestoreRepository): NavVie
 }
 
 @HiltViewModel
-class LogListViewModel @Inject constructor(repository: FirestoreRepository): NavViewModel(repository) {
+class LogListViewModel @Inject constructor(repository: FirestoreRepository): ViewModel() {
+    init {
+        repository.user.value?.uid?.let {
+            repository.getUserLogs(it)
+        }
+    }
+
+    val logs = repository.userLogsLiveData
+}
+
+@HiltViewModel
+class LogListOldViewModel @Inject constructor(repository: FirestoreRepository): NavViewModel(repository) {
     init {
         repository.user.value?.uid?.let {
             repository.getUserLogs(it)
@@ -175,11 +187,49 @@ class LogListViewModel @Inject constructor(repository: FirestoreRepository): Nav
 }
 
 @HiltViewModel
-class EditLogViewModel @Inject constructor(repository: FirestoreRepository): NavViewModel(repository) {
+class EditLogViewModel @Inject constructor(private val repository: FirestoreRepository): ViewModel() {
+    var hitchLog = mutableStateOf(HitchLog())
+        private set
+
+    fun initialize(taskId: String) {
+        val userId = repository.user.value?.uid ?: ""
+        hitchLog.value = when {
+            taskId.isEmpty() -> HitchLog(userId = userId)
+            else -> repository.userLogsLiveData.value?.find { it.id == taskId } ?: HitchLog(userId = userId)
+        }
+    }
+
+    fun updateName(value: String) {
+        hitchLog.value = hitchLog.value.copy(name = value)
+    }
+
+    fun saveLog() {
+        when {
+            hitchLog.value.id.isEmpty() -> {
+                repository.user.value?.uid?.let {
+                    repository.addLog(hitchLog.value)
+                }
+            }
+            else -> repository.updateLog(hitchLog.value)
+        }
+    }
+
+    fun deleteLog() {
+        repository.deleteLog(hitchLog.value.id)
+    }
+}
+
+@HiltViewModel
+class EditLogOldViewModel @Inject constructor(repository: FirestoreRepository): NavViewModel(repository) {
     lateinit var id: String
     lateinit var name: String
 
-    fun saveLogAndGoBack() {
+    fun initialize(logId:String) {
+        id = logId
+
+    }
+
+    fun saveLog() {
         when {
             id.isEmpty() -> {
                 repository.user.value?.uid?.let {
@@ -188,11 +238,23 @@ class EditLogViewModel @Inject constructor(repository: FirestoreRepository): Nav
             }
             else -> repository.updateLogName(id = id, name = name)
         }
+    }
+
+    fun deleteLog() {
+        repository.deleteLog(id)
+    }
+
+    fun goBack() {
         navigate(EditLogFragmentDirections.actionFinishEditingLog())
     }
 
+    fun saveLogAndGoBack() {
+        saveLog()
+        goBack()
+    }
+
     fun deleteLogAndGoBack() {
-        repository.deleteLog(id)
-        navigate(EditLogFragmentDirections.actionFinishEditingLog())
+        deleteLog()
+        goBack()
     }
 }
