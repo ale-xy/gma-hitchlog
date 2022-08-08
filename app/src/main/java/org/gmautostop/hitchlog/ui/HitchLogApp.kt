@@ -7,12 +7,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import org.gmautostop.hitchlog.AuthViewModel
-import org.gmautostop.hitchlog.ui.theme.EditLogScreen
+import org.gmautostop.hitchlog.*
 import org.gmautostop.hitchlog.ui.theme.HitchlogTheme
 
 @Preview
@@ -41,9 +41,9 @@ fun HitchLogApp() {
 
                 composable("logList") {
                     LogListScreen(
-                        openLog = { navController.navigate("log/{$it}")},//todo
-                        createLog = { navController.navigate("editLog")},
-                        editLog = { navController.navigate("editLog?logId={$it}")}
+                        openLog = { navController.navigate("log/$it") },
+                        createLog = { navController.navigate("editLog") },
+                        editLog = { navController.navigate("editLog?logId=$it") }
                     )
                 }
 
@@ -51,20 +51,57 @@ fun HitchLogApp() {
                     route = "editLog?logId={logId}",
                     arguments = listOf(navArgument("logId") { nullable = true})
                 ) {
+                    val logId = it.arguments?.getString("logId") ?: ""
+                    val viewModel: EditLogViewModel = hiltViewModel()
+                    viewModel.initialize(logId)
+
                     EditLogScreen(
-                      it.arguments?.getString("logId") ?: ""
+                        viewModel = viewModel,
+                        logId = logId
                     ) { navController.popBackStack() }
                 }
 
-                composable("log/{logId}") {
+                composable(route= "log/{logId}",
+                    arguments = listOf(navArgument("logId") { type = NavType.StringType})
+                ) { backStackEntry ->
+                    val logId = backStackEntry.arguments?.getString("logId") ?:""
+                    val viewModel: HitchLogViewModel = hiltViewModel()
+                    viewModel.initialize(logId)
 
+                    HitchLogScreen(logId = logId,
+                        viewModel = viewModel,
+                        createRecord = { type -> navController.navigate("item?itemType=${type.name}") },
+                        editRecord = { id -> navController.navigate("item?itemId=$id") })
                 }
-//
-//                composable("item/{itemId}") {
-//
-//                }
-            }
 
+                composable(
+                    route = "item?itemId={itemId}&itemType={itemType}",
+                    arguments = listOf(
+                        navArgument("itemId") { nullable = true},
+                        navArgument("itemType") { defaultValue = HitchLogRecordType.FREE_TEXT.name }
+                    )
+                ) {
+                    val itemId = it.arguments?.getString("itemId") ?: ""
+
+                    val itemType = try {
+                        HitchLogRecordType.valueOf(it.arguments?.getString("itemType") ?: HitchLogRecordType.FREE_TEXT.name)
+                    } catch (e: IllegalArgumentException) {
+                        HitchLogRecordType.FREE_TEXT
+                    }
+
+                    val viewModel: RecordViewModel = hiltViewModel()
+
+                    if (itemId.isNotEmpty()) {
+                        viewModel.initialize(itemId)
+                    } else {
+                        viewModel.initialize(itemType)
+                    }
+
+                    EditRecordScreen(
+                        viewModel = viewModel,
+                    ) { navController.popBackStack() }
+                }
+            }
         }
     }
 }

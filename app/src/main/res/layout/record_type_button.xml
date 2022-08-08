@@ -3,7 +3,7 @@
     <data>
         <variable name="recordType" type="org.gmautostop.hitchlog.HitchLogRecordType"/>
         <variable name="text" type="String"/>
-        <variable name="viewModel" type="org.gmautostop.hitchlog.HitchLogViewModel"/>
+        <variable name="viewModel" type="org.gmautostop.hitchlog.HitchLogOldViewModel"/>
     </data>
     <Button
             android:id="@+id/text"

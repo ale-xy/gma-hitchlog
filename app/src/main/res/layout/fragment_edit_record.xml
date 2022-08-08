@@ -3,7 +3,7 @@
         xmlns:tools="http://schemas.android.com/tools">
     <data>
         <import type="android.view.View"/>
-        <variable name="recordModel" type="org.gmautostop.hitchlog.RecordViewModel"/>
+        <variable name="recordModel" type="org.gmautostop.hitchlog.RecordOldViewModel"/>
     </data>
 
     <FrameLayout

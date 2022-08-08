@@ -10,7 +10,9 @@
       <map>
         <entry key="../../../../layout/compose-model-1659440803853.xml" value="0.5" />
         <entry key="app/src/main/res/layout/fragment_edit_log.xml" value="0.15443840579710144" />
+        <entry key="app/src/main/res/layout/fragment_edit_record.xml" value="0.245018115942029" />
         <entry key="app/src/main/res/layout/fragment_hitchlog.xml" value="0.15443840579710144" />
+        <entry key="app/src/main/res/layout/log_record_item.xml" value="0.1484375" />
         <entry key="app/src/main/res/layout/nav_header_main.xml" value="0.15443840579710144" />
         <entry key="app/src/main/res/layout/record_type_button.xml" value="0.15443840579710144" />
       </map>

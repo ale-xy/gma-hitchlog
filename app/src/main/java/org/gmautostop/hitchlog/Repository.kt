@@ -8,7 +8,6 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.EventListener
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.QuerySnapshot
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -28,7 +27,6 @@ class FirestoreRepository @Inject constructor(){
     val user = MutableLiveData<FirebaseUser>(FirebaseAuth.getInstance().currentUser)
 
     private fun logs() : CollectionReference = firestoreDB.collection("logs")
-
     private fun logRecords(logId: String) : CollectionReference = firestoreDB.collection("logs/$logId/records")
 
     val userLogsLiveData = MutableLiveData<List<HitchLog>>()
@@ -42,12 +40,32 @@ class FirestoreRepository @Inject constructor(){
                     return@addSnapshotListener
                 }
 
-                userLogsLiveData.value = value?.map { item ->
-                    item.toObjectWithId<HitchLog>()
-                }?.sortedByDescending { it.creationTime }
+                if (value?.documentChanges?.isNotEmpty() == true) {
+                    userLogsLiveData.postValue(
+                        value.map { item ->
+                            item.toObjectWithId<HitchLog>()
+                        }.sortedByDescending { it.creationTime }
+                    )
+                }
             }
     }
 
+    fun getLog(logId: String): MutableLiveData<HitchLog> {
+        val data = MutableLiveData(HitchLog())
+        logs().document(logId).get()
+            .addOnSuccessListener { value ->
+                if (value.exists()) {
+                    data.postValue(value.toObjectWithId())
+                    Log.d("Repository", "log doc ${value.toObjectWithId<HitchLog>()}")
+                } else {
+                    Log.e("Repository", "Document $logId doesn't exist")
+                }
+            }
+            .addOnFailureListener {
+                Log.e("Repository", it.message.orEmpty())
+            }
+        return data
+    }
 
     fun addLog(log: HitchLog) {
         logs().add(log)
@@ -79,28 +97,51 @@ class FirestoreRepository @Inject constructor(){
         }
         get() = userLogsLiveData.value?.find { it.id == currentLogId }
 
+    val recordsLiveData = MutableLiveData<List<HitchLogRecord>>()
+
+    fun getLogRecords(logId: String): MutableLiveData<List<HitchLogRecord>> {
+        val data = MutableLiveData<List<HitchLogRecord>>()
+
+        logRecords(logId)
+            .orderBy("time")
+            .addSnapshotListener(EventListener { value, error ->
+                error?.let { e ->
+                    Log.e("Repository", e.message.orEmpty())
+                    data.value = listOf()
+                    return@EventListener
+                }
+
+                if (value?.documentChanges?.isNotEmpty() == true) {
+                    data.postValue(value.map { item ->
+                        item.toObjectWithId()
+                    })
+                }
+            })
+
+        return data
+    }
+
     var currentLogId: String? = null
         set(value) {
             field = value
-            recordsLiveData.value = null
+            recordsLiveData.value = listOf()
             value?.let {
                 logRecords(it)
                     .orderBy("time")
-                    .addSnapshotListener(EventListener<QuerySnapshot> { value, error ->
+                    .addSnapshotListener(EventListener { value, error ->
                         error?.let { e ->
                             Log.e("Repository", e.message.orEmpty())
-                            recordsLiveData.value = null
                             return@EventListener
                         }
 
-                        recordsLiveData.value = value?.map { item ->
-                            item.toObjectWithId<HitchLogRecord>()
+                        if (value?.documentChanges?.isNotEmpty() == true) {
+                            recordsLiveData.postValue(value.map { item ->
+                                item.toObjectWithId()
+                            })
                         }
                     })
             }
         }
-
-    val recordsLiveData = MutableLiveData<List<HitchLogRecord>>()
 
     fun addRecord(record: HitchLogRecord) {
         currentLogId?.let {
@@ -130,6 +171,6 @@ class FirestoreRepository @Inject constructor(){
 
 @SuppressLint("SimpleDateFormat")
 fun Date.toMinutes(): Date {
-    val dateTimeFormat = SimpleDateFormat("dd.MM.yyyy hh:mm")
+    val dateTimeFormat = SimpleDateFormat("dd.MM.yyyy HH:mm")
     return dateTimeFormat.parse(dateTimeFormat.format(this))!!
 }

@@ -1,4 +1,4 @@
-package org.gmautostop.hitchlog.ui.theme
+package org.gmautostop.hitchlog.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -6,7 +6,6 @@ import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -20,10 +19,6 @@ fun EditLogScreen(
     finish: () -> Unit
 ) {
     val hitchLog by viewModel.hitchLog
-
-    LaunchedEffect(Unit) {
-        viewModel.initialize(logId)
-    }
 
     Column {
         TextField(value = hitchLog.name,

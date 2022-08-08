@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android">
     <data>
-        <variable name="viewModel" type="org.gmautostop.hitchlog.HitchLogViewModel"/>
+        <variable name="viewModel" type="org.gmautostop.hitchlog.HitchLogOldViewModel"/>
         <variable name="record" type="org.gmautostop.hitchlog.HitchLogRecord"/>
         <variable name="time" type="String"/>
         <variable name="type" type="String"/>
