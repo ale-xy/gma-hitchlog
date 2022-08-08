@@ -145,13 +145,23 @@ class FirestoreRepository @Inject constructor(){
 
     fun addRecord(record: HitchLogRecord) {
         currentLogId?.let {
-            logRecords(it).add(record)
+            logRecords(it).add(record.copy(time = getNextTime(record.time)))
         } ?: Log.e("HitchLogViewModel", "No current log")
     }
 
     fun updateRecord(record: HitchLogRecord) {
         currentLogId?.let {
-            logRecords(it).document(record.id).set(record)
+            logRecords(it).document(record.id).get()
+                .onSuccessTask { doc ->
+                    val existing = doc.toObjectWithId<HitchLogRecord>()
+                    val updatedRecord = if (existing.time == record.time) {
+                        record
+                    } else {
+                        record.copy(time = getNextTime(record.time))
+                    }
+
+                    logRecords(it).document(record.id).set(updatedRecord)
+                }
         } ?: Log.e("HitchLogViewModel", "No current log")
     }
 
@@ -167,6 +177,15 @@ class FirestoreRepository @Inject constructor(){
             else -> updateRecord(record)
         }
     }
+
+    private fun getNextTime(enteredTime: Date): Date {
+        return recordsLiveData.value?.filter {
+            it.time.toMinutes() == enteredTime
+        }?.maxByOrNull { it.time }?.time?.addSecond()
+            ?: enteredTime
+    }
+
+    private fun Date.addSecond(): Date = Date(time + 1000)
 }
 
 @SuppressLint("SimpleDateFormat")

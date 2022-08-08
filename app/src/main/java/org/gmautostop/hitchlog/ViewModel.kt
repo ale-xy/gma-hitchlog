@@ -1,25 +1,14 @@
 package org.gmautostop.hitchlog
 
 import android.annotation.SuppressLint
-import android.app.Application
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.navigation.NavDirections
 import dagger.hilt.android.lifecycle.HiltViewModel
-import me.tatarka.bindingcollectionadapter2.ItemBinding
-import org.gmautostop.hitchlog.util.SingleLiveEvent
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
-
-open class NavViewModel(val repository: FirestoreRepository): ViewModel() {
-    val navigationCommands: SingleLiveEvent<NavDirections> = SingleLiveEvent()
-
-    fun navigate(directions: NavDirections) {
-        navigationCommands.postValue(directions)
-    }
-}
 
 @HiltViewModel
 class HitchLogViewModel @Inject constructor(private val repository: FirestoreRepository) : ViewModel() {
@@ -36,50 +25,6 @@ class HitchLogViewModel @Inject constructor(private val repository: FirestoreRep
         records = repository.getLogRecords(logId)
     }
 }
-
-
-@HiltViewModel
-class HitchLogOldViewModel @Inject constructor(
-    private val application: Application,
-    repository: FirestoreRepository) : NavViewModel(repository) {
-
-    var logId :String?
-        get() = repository.currentLogId
-        set(value) { repository.currentLogId = value }
-
-    val log: HitchLog?
-        get() = repository.currentLog
-
-    fun records() = repository.recordsLiveData
-
-    fun goToAddFragment(type: HitchLogRecordType) {
-        navigate(HitchLogFragmentDirections.actionHitchlogToEditItem(recordType = type))
-    }
-
-    fun goToEditFragment(record: HitchLogRecord) {
-        navigate(HitchLogFragmentDirections.actionHitchlogToEditItem(record = record))
-    }
-
-    @SuppressLint("SimpleDateFormat")
-    private val timeFormat = SimpleDateFormat("HH:mm")
-
-    val recordTypes = HitchLogRecordType.values().asList()
-
-    val recordBinding = ItemBinding.of<HitchLogRecord> { itemBinding, _, item ->
-        itemBinding.set(BR.record, R.layout.log_record_item)
-            .bindExtra(BR.type, application.resources.getString(item.type.text))
-            .bindExtra(BR.time, timeFormat.format(item.time))
-            .bindExtra(BR.text, item.text)
-            .bindExtra(BR.viewModel, this)
-    }
-
-    val buttonBinding = ItemBinding.of<HitchLogRecordType> { itemBinding, _, item ->
-        itemBinding.set(BR.recordType, R.layout.record_type_button)
-            .bindExtra(BR.text, application.resources.getString(item.text))
-            .bindExtra(BR.viewModel, this)
-    }
-}
-
 @HiltViewModel
 class RecordViewModel @Inject constructor(val repository: FirestoreRepository):ViewModel() {
     val dateFormat = SimpleDateFormat("dd.MM.yyyy")
@@ -89,41 +34,58 @@ class RecordViewModel @Inject constructor(val repository: FirestoreRepository):V
     var record = mutableStateOf(HitchLogRecord())
         private set
 
-    fun initialize (recordId: String) {
-        record.value = repository.recordsLiveData.value?.find {
-            it.id == recordId
-        } ?: HitchLogRecord()
+    var date = MutableLiveData<String>()
+    var time = MutableLiveData<String>()
 
+    fun initialize (recordId: String) {
+        record.value = (repository.recordsLiveData.value?.find {
+            it.id == recordId
+        } ?: HitchLogRecord()).also {
+            date.value = dateFormat.format(it.time)
+            time.value = timeFormat.format(it.time)
+        }
     }
 
     fun initialize(type: HitchLogRecordType) {
-        record.value = HitchLogRecord(type = type)
+        record.value = HitchLogRecord(type = type).also {
+            date.value = dateFormat.format(it.time)
+            time.value = timeFormat.format(it.time)
+        }
     }
 
     fun updateDate(date: String) {
-        val currentTime = timeFormat.format(record.value.time)
-        record.value = record.value.copy(time = dateTimeFormat.parse("$date $currentTime") ?: record.value.time) //todo error
+        this.date.value = date
     }
 
     fun updateTime(time: String) {
-        val currentDate = dateFormat.format(record.value.time)
+        this.time.value = time
+    }
 
-        record.value = record.value.copy(time = dateTimeFormat.parse("$currentDate $time") ?: Date()) //todo error
+    private fun saveDate() {
+        try {
+            dateTimeFormat.parse("${date.value} ${time.value}")?.let {
+                record.value = record.value.copy(time = it)
+            }
+        } catch (e: ParseException) {}
     }
 
     fun updateText(text:String) {
         record.value = record.value.copy(text = text)
     }
 
-    fun save() = repository.saveRecord(record.value)
+    fun save() {
+        saveDate()
+        repository.saveRecord(record.value)
+    }
 
     fun delete() = repository.deleteRecord(record.value)
 }
 
 
+//todo remove
 @SuppressLint("SimpleDateFormat")
 @HiltViewModel
-class RecordOldViewModel @Inject constructor(repository: FirestoreRepository): NavViewModel(repository){
+class RecordOldViewModel @Inject constructor(val repository: FirestoreRepository): ViewModel(){
     private val dateFormat = SimpleDateFormat("dd.MM.yyyy")
     private val timeFormat = SimpleDateFormat("HH:mm")
     private val dateTimeFormat = SimpleDateFormat("dd.MM.yyyy HH:mm")
@@ -180,25 +142,10 @@ class RecordOldViewModel @Inject constructor(repository: FirestoreRepository): N
     }
 
     private fun Date.addSecond(): Date = Date(time + 1000)
-
-    fun save(item: HitchLogRecord) = repository.saveRecord(item)
-
-    fun delete(item: HitchLogRecord) = repository.deleteRecord(item)
-
-    fun saveRecordAndGoBack(record: HitchLogRecord) {
-        save(record)
-        navigate(EditRecordFragmentDirections.actionFinishEditingRecord())
-    }
-
-    fun deleteRecordAndGoBack(record: HitchLogRecord) {
-        //todo confirm
-        delete(record)
-        navigate(EditRecordFragmentDirections.actionFinishEditingRecord())
-    }
 }
 
 @HiltViewModel
-class AuthViewModel @Inject constructor(repository: FirestoreRepository): NavViewModel(repository) {
+class AuthViewModel @Inject constructor(val repository: FirestoreRepository): ViewModel() {
     val signedIn
         get() = repository.user.value != null
 
@@ -215,35 +162,6 @@ class LogListViewModel @Inject constructor(repository: FirestoreRepository): Vie
     }
 
     val logs = repository.userLogsLiveData
-}
-
-@HiltViewModel
-class LogListOldViewModel @Inject constructor(repository: FirestoreRepository): NavViewModel(repository) {
-    init {
-        repository.user.value?.uid?.let {
-            repository.getUserLogs(it)
-        }
-    }
-
-    fun logs() = repository.userLogsLiveData
-
-    val logBinding = ItemBinding.of<HitchLog> { itemBinding, _, item ->
-        itemBinding.set(BR.log, R.layout.logs_list_item)
-            .bindExtra(BR.text, item.name)
-            .bindExtra(BR.viewModel, this)
-    }
-
-    fun goToAddFragment() {
-        navigate(LogListFragmentDirections.actionLogListFragmentToEditLogFragment())
-    }
-
-    fun goToEditFragment(log: HitchLog) {
-        navigate(LogListFragmentDirections.actionLogListFragmentToEditLogFragment(logId = log.id, logName = log.name))
-    }
-
-    fun openLog(log: HitchLog) {
-        navigate(LogListFragmentDirections.actionLogListFragmentToHitchlogFragment(log.id))
-    }
 }
 
 @HiltViewModel
@@ -279,42 +197,3 @@ class EditLogViewModel @Inject constructor(private val repository: FirestoreRepo
     }
 }
 
-@HiltViewModel
-class EditLogOldViewModel @Inject constructor(repository: FirestoreRepository): NavViewModel(repository) {
-    lateinit var id: String
-    lateinit var name: String
-
-    fun initialize(logId:String) {
-        id = logId
-
-    }
-
-    fun saveLog() {
-        when {
-            id.isEmpty() -> {
-                repository.user.value?.uid?.let {
-                    repository.addLog(HitchLog(name = this.name, userId = it))
-                }
-            }
-            else -> repository.updateLogName(id = id, name = name)
-        }
-    }
-
-    fun deleteLog() {
-        repository.deleteLog(id)
-    }
-
-    fun goBack() {
-        navigate(EditLogFragmentDirections.actionFinishEditingLog())
-    }
-
-    fun saveLogAndGoBack() {
-        saveLog()
-        goBack()
-    }
-
-    fun deleteLogAndGoBack() {
-        deleteLog()
-        goBack()
-    }
-}

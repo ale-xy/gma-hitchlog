@@ -7,6 +7,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import org.gmautostop.hitchlog.R
@@ -19,18 +20,24 @@ fun EditRecordScreen(
 ) {
     val hitchLogRecord by viewModel.record
 
+    val date = viewModel.date.observeAsState("")
+
+    val time = viewModel.time.observeAsState("")
+
     Column {
         Text(text = stringResource(id = hitchLogRecord.type.text))
 
         TextField(
-            value = viewModel.dateFormat.format(hitchLogRecord.time),
+            value = date.value,
             onValueChange = { viewModel.updateDate(it) },
-            label = { Text(stringResource(R.string.date))}
+            label = { Text(stringResource(R.string.date))},
+            singleLine = true
         )
         TextField(
-            value = viewModel.timeFormat.format(hitchLogRecord.time),
+            value = time.value,
             onValueChange = { viewModel.updateTime(it) },
-            label = { Text(stringResource(R.string.time))}
+            label = { Text(stringResource(R.string.time))},
+            singleLine = true
         )
         TextField(
             value = hitchLogRecord.text,
