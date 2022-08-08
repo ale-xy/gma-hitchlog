@@ -1,13 +1,11 @@
 package org.gmautostop.hitchlog
 
-import android.annotation.SuppressLint
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
 import javax.inject.Inject
 
 @HiltViewModel
@@ -26,9 +24,9 @@ class HitchLogViewModel @Inject constructor(private val repository: FirestoreRep
     }
 }
 @HiltViewModel
-class RecordViewModel @Inject constructor(val repository: FirestoreRepository):ViewModel() {
-    val dateFormat = SimpleDateFormat("dd.MM.yyyy")
-    val timeFormat = SimpleDateFormat("HH:mm")
+class RecordViewModel @Inject constructor(private val repository: FirestoreRepository):ViewModel() {
+    private val dateFormat = SimpleDateFormat("dd.MM.yyyy")
+    private val timeFormat = SimpleDateFormat("HH:mm")
     private val dateTimeFormat = SimpleDateFormat("dd.MM.yyyy HH:mm")
 
     var record = mutableStateOf(HitchLogRecord())
@@ -79,69 +77,6 @@ class RecordViewModel @Inject constructor(val repository: FirestoreRepository):V
     }
 
     fun delete() = repository.deleteRecord(record.value)
-}
-
-
-//todo remove
-@SuppressLint("SimpleDateFormat")
-@HiltViewModel
-class RecordOldViewModel @Inject constructor(val repository: FirestoreRepository): ViewModel(){
-    private val dateFormat = SimpleDateFormat("dd.MM.yyyy")
-    private val timeFormat = SimpleDateFormat("HH:mm")
-    private val dateTimeFormat = SimpleDateFormat("dd.MM.yyyy HH:mm")
-
-    lateinit var type: HitchLogRecordType
-    lateinit var id : String
-    lateinit var date : String
-    lateinit var time : String
-    lateinit var text : String
-
-    var existingRecord: HitchLogRecord? = null
-
-    fun initialize(record: HitchLogRecord) {
-        reset()
-        existingRecord = record
-        type = record.type
-        id = record.id
-        date = dateFormat.format(record.time)
-        time = timeFormat.format(record.time)
-        text = record.text
-    }
-
-    fun initialize(type: HitchLogRecordType) {
-        reset()
-        this.type = type
-    }
-
-    private fun reset() {
-        id = ""
-        date = dateFormat.format(Date())
-        time = timeFormat.format(Date())
-        text = ""
-    }
-
-    fun getRecord() : HitchLogRecord {
-        val enteredTime: Date = dateTimeFormat.parse("$date $time")!!
-
-        val newTime: Date =
-            existingRecord?.time?.let {
-                when (it.toMinutes()) {
-                    enteredTime -> it
-                    else -> getNextTime(enteredTime)
-                }
-            } ?: getNextTime(enteredTime)
-
-        return HitchLogRecord(id, newTime, type, text)
-    }
-
-    private fun getNextTime(enteredTime: Date): Date {
-        return repository.recordsLiveData.value?.filter {
-                    it.time.toMinutes() == enteredTime
-                }?.maxByOrNull { it.time }?.time?.addSecond()
-            ?: enteredTime
-    }
-
-    private fun Date.addSecond(): Date = Date(time + 1000)
 }
 
 @HiltViewModel

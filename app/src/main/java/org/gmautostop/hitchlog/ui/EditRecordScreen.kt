@@ -19,9 +19,7 @@ fun EditRecordScreen(
     finish: () -> Unit
 ) {
     val hitchLogRecord by viewModel.record
-
     val date = viewModel.date.observeAsState("")
-
     val time = viewModel.time.observeAsState("")
 
     Column {
@@ -63,5 +61,4 @@ fun EditRecordScreen(
             }
         }
     }
-
 }
