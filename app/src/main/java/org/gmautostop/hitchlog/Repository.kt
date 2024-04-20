@@ -5,14 +5,17 @@ import android.util.Log
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.firestore.snapshots
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.*
@@ -65,13 +68,19 @@ class FirestoreRepository @Inject constructor(){
     private fun getUserId() =
         user?.uid ?: throw Exception("Not logged in")
 
-    fun getUserLogs() = repositoryFlow {
-        logs().whereEqualTo("userId", getUserId())
-            .get().await().documents.map { document ->
-                Log.d("Repository", "getUserLogs ${document.id} $document")
-                document.toObjectWithId<HitchLog>()
-            }.sortedByDescending { it.creationTime }
-    }
+    fun getUserLogs() =
+        logs()
+            .whereEqualTo("userId", getUserId())
+            .orderBy("creationTime", Query.Direction.DESCENDING)
+            .snapshots().map {
+                Log.d("Repository", "getUserLogs onEach")
+                it.documents.map { document ->
+                    Log.d("Repository", "getUserLogs $document")
+                    document.toObjectWithId<HitchLog>()
+                }
+            }.map {
+                Response.Success(it)
+            }.flowOn(Dispatchers.IO)
 
     fun getLog(logId: String) = repositoryFlow {
         Log.d("Repository", "getLog $logId")
@@ -108,12 +117,15 @@ class FirestoreRepository @Inject constructor(){
         logs().document(id).delete().await()
     }
 
-    fun getLogRecords(logId: String) = repositoryFlow {
-        logRecords(logId).orderBy("time")
-            .get().await().documents.map { document ->
+    fun getLogRecords(logId: String) =
+        logRecords(logId).orderBy("time").snapshots().map {
+            it.documents.map {document ->
                 document.toObjectWithId<HitchLogRecord>()
             }
-    }
+        }.map {
+            Response.Success(it)
+        }
+
 
     fun getRecord(logId: String, recordId: String) = repositoryFlow {
         with(logRecords(logId).document(recordId).get().await()) {

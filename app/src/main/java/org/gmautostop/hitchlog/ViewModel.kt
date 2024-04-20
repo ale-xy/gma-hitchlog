@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
@@ -44,15 +45,13 @@ class HitchLogViewModel @Inject constructor(
                     is Response.Loading -> state.value = ViewState.Loading
                     is Response.Failure -> state.value = ViewState.Error(response.errorMessage)
                     is Response.Success -> {
-                        repository.getLogRecords(logId).collect { recordResponse ->
-                            when(recordResponse) {
-                                is Response.Loading -> state.value = ViewState.Loading
-                                is Response.Failure -> state.value = ViewState.Error(recordResponse.errorMessage)
-                                is Response.Success ->
-                                    state.value = ViewState.Show(HitchLogState(response.data, recordResponse.data))
+                        repository.getLogRecords(logId)
+                            .catch {
+                                state.value = ViewState.Error(it.message.orEmpty())
+                            }.collect { recordResponse ->
+                                state.value = ViewState.Show(HitchLogState(response.data, recordResponse.data))
                             }
                         }
-                    }
                 }
             }.distinctUntilChanged().collect()
         }
@@ -161,16 +160,19 @@ class LogListViewModel @Inject constructor(repository: FirestoreRepository): Vie
 
     init {
         viewModelScope.launch {
-            repository.getUserLogs().distinctUntilChanged().collect { response ->
-                state.value = when (response) {
-                    is Response.Loading -> ViewState.Loading
-                    is Response.Success -> ViewState.Show(response.data)
-                    is Response.Failure -> ViewState.Error(response.errorMessage)
+            state.value = ViewState.Loading
+
+            repository.getUserLogs().distinctUntilChanged()
+                .catch {
+                    state.value = ViewState.Error(it.message.orEmpty())
+                }
+                .collect { response ->
+                    state.value = ViewState.Show(response.data)
                 }
             }
         }
     }
-}
+
 
 @HiltViewModel
 class EditLogViewModel @Inject constructor(
