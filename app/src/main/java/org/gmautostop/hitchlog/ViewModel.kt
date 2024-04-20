@@ -2,32 +2,76 @@ package org.gmautostop.hitchlog
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import javax.inject.Inject
 
+sealed class ViewState<out T: Any> {
+    data object Loading : ViewState<Nothing>()
+    class Show<out T: Any>(val value: T) : ViewState<T>()
+    class Error(val error: String) : ViewState<Nothing>()
+}
+
+data class HitchLogState(
+    val log: HitchLog,
+    val records: List<HitchLogRecord>
+)
+
 @HiltViewModel
-class HitchLogViewModel @Inject constructor(private val repository: FirestoreRepository) : ViewModel() {
-    lateinit var hitchLog: MutableLiveData<HitchLog>
-        private set
+class HitchLogViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
+    repository: FirestoreRepository
+) : ViewModel() {
+    val state = MutableStateFlow<ViewState<HitchLogState>>(ViewState.Loading)
 
-    lateinit var records: MutableLiveData<List<HitchLogRecord>>
-        private set
+    init {
+        val logId = savedStateHandle.get<String>("logId")
+            ?: throw IllegalArgumentException("log ID is null")
 
-    fun initialize(logId: String) {
-        hitchLog = repository.getLog(logId)
-
-        repository.currentLogId = logId
-        records = repository.getLogRecords(logId)
+        viewModelScope.launch {
+            repository.getLog(logId).onEach { response ->
+                when(response) {
+                    is Response.Loading -> state.value = ViewState.Loading
+                    is Response.Failure -> state.value = ViewState.Error(response.errorMessage)
+                    is Response.Success -> {
+                        repository.getLogRecords(logId).collect { recordResponse ->
+                            when(recordResponse) {
+                                is Response.Loading -> state.value = ViewState.Loading
+                                is Response.Failure -> state.value = ViewState.Error(recordResponse.errorMessage)
+                                is Response.Success ->
+                                    state.value = ViewState.Show(HitchLogState(response.data, recordResponse.data))
+                            }
+                        }
+                    }
+                }
+            }.distinctUntilChanged().collect()
+        }
     }
 }
+
+
 @HiltViewModel
-class RecordViewModel @Inject constructor(private val repository: FirestoreRepository):ViewModel() {
+class RecordViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
+    private val repository: FirestoreRepository
+):ViewModel() {
     private val dateFormat = SimpleDateFormat("dd.MM.yyyy")
     private val timeFormat = SimpleDateFormat("HH:mm")
     private val dateTimeFormat = SimpleDateFormat("dd.MM.yyyy HH:mm")
+
+    private val logId:String
+
+    val state = MutableStateFlow<ViewState<HitchLogRecord>>(ViewState.Loading)
 
     var record = mutableStateOf(HitchLogRecord())
         private set
@@ -35,19 +79,42 @@ class RecordViewModel @Inject constructor(private val repository: FirestoreRepos
     var date = MutableLiveData<String>()
     var time = MutableLiveData<String>()
 
-    fun initialize (recordId: String) {
-        record.value = (repository.recordsLiveData.value?.find {
-            it.id == recordId
-        } ?: HitchLogRecord()).also {
-            date.value = dateFormat.format(it.time)
-            time.value = timeFormat.format(it.time)
-        }
-    }
+    init {
+        logId = savedStateHandle.get<String>("logId")
+            ?: throw IllegalArgumentException("log ID is null")
 
-    fun initialize(type: HitchLogRecordType) {
-        record.value = HitchLogRecord(type = type).also {
-            date.value = dateFormat.format(it.time)
-            time.value = timeFormat.format(it.time)
+        val itemId = savedStateHandle.get<String>("itemId")
+
+        val itemType = try {
+            HitchLogRecordType.valueOf(savedStateHandle.get<String>("itemType")
+                ?: HitchLogRecordType.FREE_TEXT.name)
+        } catch (e: IllegalArgumentException) {
+            HitchLogRecordType.FREE_TEXT
+        }
+
+        if (itemId.isNullOrEmpty()) {
+            record.value = HitchLogRecord(type = itemType).also {
+                date.value = dateFormat.format(it.time)
+                time.value = timeFormat.format(it.time)
+            }
+            state.value = ViewState.Show(record.value)
+        } else {
+            viewModelScope.launch {
+                repository.getRecord(logId, itemId).distinctUntilChanged().collect { response ->
+                    when (response) {
+                        is Response.Loading<*> -> state.value = ViewState.Loading
+                        is Response.Success<HitchLogRecord> -> {
+                            response.data.let {
+                                state.value = ViewState.Show(it)
+                                record.value = it
+                                date.value = dateFormat.format(it.time)
+                                time.value = timeFormat.format(it.time)
+                            }
+                        }
+                        is Response.Failure<*> -> state.value = ViewState.Error(response.errorMessage)
+                    }
+                }
+            }
         }
     }
 
@@ -73,62 +140,95 @@ class RecordViewModel @Inject constructor(private val repository: FirestoreRepos
 
     fun save() {
         saveDate()
-        repository.saveRecord(record.value)
+        repository.saveRecord(logId, record.value).launchIn(viewModelScope)
     }
 
-    fun delete() = repository.deleteRecord(record.value)
+    fun delete() = repository.deleteRecord(logId, record.value).launchIn(viewModelScope)
 }
 
 @HiltViewModel
-class AuthViewModel @Inject constructor(val repository: FirestoreRepository): ViewModel() {
+class AuthViewModel @Inject constructor(private val repository: FirestoreRepository): ViewModel() {
     val signedIn
-        get() = repository.user.value != null
+        get() = repository.user != null
 
     val userName
-        get() = repository.user.value?.displayName
+        get() = repository.user?.displayName
 }
 
 @HiltViewModel
 class LogListViewModel @Inject constructor(repository: FirestoreRepository): ViewModel() {
+    val state = MutableStateFlow<ViewState<List<HitchLog>>>(ViewState.Loading)
+
     init {
-        repository.user.value?.uid?.let {
-            repository.getUserLogs(it)
+        viewModelScope.launch {
+            repository.getUserLogs().distinctUntilChanged().collect { response ->
+                state.value = when (response) {
+                    is Response.Loading -> ViewState.Loading
+                    is Response.Success -> ViewState.Show(response.data)
+                    is Response.Failure -> ViewState.Error(response.errorMessage)
+                }
+            }
         }
     }
-
-    val logs = repository.userLogsLiveData
 }
 
 @HiltViewModel
-class EditLogViewModel @Inject constructor(private val repository: FirestoreRepository): ViewModel() {
-    var hitchLog = mutableStateOf(HitchLog())
-        private set
+class EditLogViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
+    private val repository: FirestoreRepository
+): ViewModel() {
+    val state = MutableStateFlow<ViewState<HitchLog>>(ViewState.Loading)
+    private var name: String = ""
 
-    fun initialize(logId: String) {
-        val userId = repository.user.value?.uid ?: ""
-        hitchLog.value = when {
-            logId.isEmpty() -> HitchLog(userId = userId)
-            else -> repository.userLogsLiveData.value?.find { it.id == logId } ?: HitchLog(userId = userId)
+    init {
+        val logId = savedStateHandle.get<String>("logId")
+
+        viewModelScope.launch {
+            val userId = repository.user?.uid
+            when {
+                userId == null -> state.value = ViewState.Error("Not logged in!")
+                logId.isNullOrEmpty() -> state.value = ViewState.Show(HitchLog(userId = userId))
+                else -> repository.getLog(logId).distinctUntilChanged().collect { response ->
+                    state.value = when (response) {
+                        is Response.Loading -> ViewState.Loading
+                        is Response.Success -> ViewState.Show(response.data).also {
+                            name = response.data.name
+                        }
+                        is Response.Failure -> ViewState.Error(response.errorMessage)
+                    }
+                }
+            }
         }
     }
 
+    private fun withLog(action: (HitchLog) -> Unit) {
+        val log = (state.value as? ViewState.Show<HitchLog>)?.value
+        log?.let { action(it) }
+    }
+
     fun updateName(value: String) {
-        hitchLog.value = hitchLog.value.copy(name = value)
+        withLog {
+            name = value
+            state.value = ViewState.Show(it.copy(name = value))
+        }
     }
 
     fun saveLog() {
-        when {
-            hitchLog.value.id.isEmpty() -> {
-                repository.user.value?.uid?.let {
-                    repository.addLog(hitchLog.value)
-                }
+        withLog { log ->
+            when {
+                log.id.isEmpty() ->
+                    repository.user?.uid?.let {
+                        repository.addLog(log.copy(name = name)).launchIn(viewModelScope)
+                    }
+                else -> repository.updateLog(log.copy(name = name)).launchIn(viewModelScope)
             }
-            else -> repository.updateLog(hitchLog.value)
         }
     }
 
     fun deleteLog() {
-        repository.deleteLog(hitchLog.value.id)
-    }
+        withLog {
+            repository.deleteLog(it.id).launchIn(viewModelScope)
+        }
+     }
 }
 

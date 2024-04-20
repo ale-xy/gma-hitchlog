@@ -9,34 +9,58 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.gmautostop.hitchlog.EditLogViewModel
+import org.gmautostop.hitchlog.HitchLog
 import org.gmautostop.hitchlog.R
+import org.gmautostop.hitchlog.ViewState
 
 @Composable
 fun EditLogScreen(
-    logId: String,
     viewModel: EditLogViewModel = hiltViewModel(),
     finish: () -> Unit
 ) {
-    val hitchLog by viewModel.hitchLog
+    val state: ViewState<HitchLog> by viewModel.state.collectAsStateWithLifecycle()
 
+    when (state) {
+        is ViewState.Loading -> Loading()
+        is ViewState.Error -> Error((state as ViewState.Error).error)
+        is ViewState.Show<HitchLog> ->
+            Log(
+                (state as ViewState.Show<HitchLog>).value,
+                { name -> viewModel.updateName(name) },
+                { viewModel.saveLog() },
+                { viewModel.deleteLog() },
+                finish
+            )
+    }
+}
+
+@Composable
+fun Log(
+    log: HitchLog,
+    updateName: (String) -> Unit,
+    saveLog: () -> Unit,
+    deleteLog: () -> Unit,
+    finish: () -> Unit
+) {
     Column {
-        TextField(value = hitchLog.name,
-            onValueChange = { viewModel.updateName(it) },
+        TextField(value = log.name,
+            onValueChange = { updateName(it) },
             label = { Text(stringResource(R.string.name))}
         )
 
         Row {
             Button(onClick = {
-                viewModel.saveLog()
+                saveLog()
                 finish()
             }) {
                 Text(stringResource(android.R.string.ok))
             }
 
-            if (hitchLog.id.isNotEmpty()) {
+            if (log.id.isNotEmpty()) {
                 Button(onClick = {
-                    viewModel.deleteLog()
+                    deleteLog()
                     finish()
                 }) {
                     Text(stringResource(R.string.delete))

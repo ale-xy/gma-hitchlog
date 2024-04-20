@@ -2,81 +2,99 @@ package org.gmautostop.hitchlog
 
 import android.annotation.SuppressLint
 import android.util.Log
-import androidx.lifecycle.MutableLiveData
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.CollectionReference
-import com.google.firebase.firestore.EventListener
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
+sealed class Response<out T> {
+    class Loading<out T>: Response<T>()
+
+    data class Success<out T>(
+        val data: T
+    ): Response<T>()
+
+    data class Failure<out T>(
+        val errorMessage: String
+    ): Response<T>()
+}
+
 @Singleton
 class FirestoreRepository @Inject constructor(){
     init {
         FirebaseFirestore.setLoggingEnabled(true)
-        FirebaseAuth.getInstance().addAuthStateListener {
-            user.value = it.currentUser
+        Firebase.auth.addAuthStateListener {
+            user = it.currentUser
         }
     }
 
-    private var firestoreDB = FirebaseFirestore.getInstance()
+    private var firestoreDB = Firebase.firestore
 
-    val user = MutableLiveData<FirebaseUser>(FirebaseAuth.getInstance().currentUser)
+    var user = Firebase.auth.currentUser
 
     private fun logs() : CollectionReference = firestoreDB.collection("logs")
     private fun logRecords(logId: String) : CollectionReference = firestoreDB.collection("logs/$logId/records")
 
-    val userLogsLiveData = MutableLiveData<List<HitchLog>>()
+    private fun <T> repositoryFlow(body:suspend () -> T): Flow<Response<T>> =
+        flow {
+            Log.d("Repository","repositoryFlow loading")
+            emit(Response.Loading())
+            val result = body().also {
+                Log.d("Repository","repositoryFlow success $it")
+            }
+            emit(Response.Success(result))
+        }.catch { error ->
+            error.message?.let { errorMessage ->
+                Log.e("Repository", errorMessage)
+                emit(Response.Failure(errorMessage))
+            }
+        }.flowOn(Dispatchers.IO)
 
-    fun getUserLogs(userId: String) {
-        logs().whereEqualTo("userId", userId)
-            .addSnapshotListener { value, error ->
-                error?.let { e ->
-                    Log.e("Repository", e.message.orEmpty())
-                    userLogsLiveData.value = listOf()
-                    return@addSnapshotListener
-                }
+    private fun getUserId() =
+        user?.uid ?: throw Exception("Not logged in")
 
-                if (value?.documentChanges?.isNotEmpty() == true) {
-                    userLogsLiveData.postValue(
-                        value.map { item ->
-                            item.toObjectWithId<HitchLog>()
-                        }.sortedByDescending { it.creationTime }
-                    )
+    fun getUserLogs() = repositoryFlow {
+        logs().whereEqualTo("userId", getUserId())
+            .get().await().documents.map { document ->
+                Log.d("Repository", "getUserLogs ${document.id} $document")
+                document.toObjectWithId<HitchLog>()
+            }.sortedByDescending { it.creationTime }
+    }
+
+    fun getLog(logId: String) = repositoryFlow {
+        Log.d("Repository", "getLog $logId")
+        with (logs().document(logId).get().await()) {
+            when {
+                !exists() -> throw Exception("Document $logId doesn't exist")
+                else -> return@repositoryFlow (toObjectWithId<HitchLog>()).also {
+                    Log.d("Repository", "log doc ${toObjectWithId<HitchLog>()}")
                 }
             }
+        }
     }
 
-    fun getLog(logId: String): MutableLiveData<HitchLog> {
-        val data = MutableLiveData(HitchLog())
-        logs().document(logId).get()
-            .addOnSuccessListener { value ->
-                if (value.exists()) {
-                    data.postValue(value.toObjectWithId())
-                    Log.d("Repository", "log doc ${value.toObjectWithId<HitchLog>()}")
-                } else {
-                    Log.e("Repository", "Document $logId doesn't exist")
-                }
-            }
-            .addOnFailureListener {
-                Log.e("Repository", it.message.orEmpty())
-            }
-        return data
+    fun addLog(log: HitchLog) = repositoryFlow {
+        logs().add(log).await()
     }
 
-    fun addLog(log: HitchLog) {
-        logs().add(log)
+    fun updateLog(log: HitchLog) = repositoryFlow {
+        logs().document(log.id).set(log).await()
     }
 
-    fun updateLog(log: HitchLog) {
-        logs().document(log.id).set(log)
-    }
-
-    fun updateLogName(id: String, name: String) {
-        logs().document(id).update("name", name)
+    fun updateLogName(id: String, name: String) = repositoryFlow {
+        logs().document(id).update("name", name).await()
     }
 
     fun saveLog(log: HitchLog) {
@@ -86,106 +104,66 @@ class FirestoreRepository @Inject constructor(){
         }
     }
 
-    fun deleteLog(id: String) {
-        logs().document(id).delete()
+    fun deleteLog(id: String) = repositoryFlow {
+        logs().document(id).delete().await()
     }
 
-    var currentLog: HitchLog? = null
-        set(value) {
-            field = value
-            currentLogId = value?.id
-        }
-        get() = userLogsLiveData.value?.find { it.id == currentLogId }
-
-    val recordsLiveData = MutableLiveData<List<HitchLogRecord>>()
-
-    fun getLogRecords(logId: String): MutableLiveData<List<HitchLogRecord>> {
-        val data = MutableLiveData<List<HitchLogRecord>>()
-
-        logRecords(logId)
-            .orderBy("time")
-            .addSnapshotListener(EventListener { value, error ->
-                error?.let { e ->
-                    Log.e("Repository", e.message.orEmpty())
-                    data.value = listOf()
-                    return@EventListener
-                }
-
-                if (value?.documentChanges?.isNotEmpty() == true) {
-                    data.postValue(value.map { item ->
-                        item.toObjectWithId()
-                    })
-                }
-            })
-
-        return data
+    fun getLogRecords(logId: String) = repositoryFlow {
+        logRecords(logId).orderBy("time")
+            .get().await().documents.map { document ->
+                document.toObjectWithId<HitchLogRecord>()
+            }
     }
 
-    var currentLogId: String? = null
-        set(value) {
-            field = value
-            recordsLiveData.value = listOf()
-            value?.let {
-                logRecords(it)
-                    .orderBy("time")
-                    .addSnapshotListener(EventListener { value, error ->
-                        error?.let { e ->
-                            Log.e("Repository", e.message.orEmpty())
-                            return@EventListener
-                        }
-
-                        if (value?.documentChanges?.isNotEmpty() == true) {
-                            recordsLiveData.postValue(value.map { item ->
-                                item.toObjectWithId()
-                            })
-                        }
-                    })
+    fun getRecord(logId: String, recordId: String) = repositoryFlow {
+        with(logRecords(logId).document(recordId).get().await()) {
+            when {
+                !exists() -> throw Exception("Document $recordId doesn't exist")
+                else -> return@repositoryFlow (toObjectWithId<HitchLogRecord>()).also {
+                    Log.d("Repository", "log record ${toObjectWithId<HitchLogRecord>()}")
+                }
             }
         }
-
-    fun addRecord(record: HitchLogRecord) {
-        currentLogId?.let {
-            logRecords(it).add(record.copy(time = getNextTime(record.time)))
-        } ?: Log.e("HitchLogViewModel", "No current log")
     }
 
-    fun updateRecord(record: HitchLogRecord) {
-        currentLogId?.let {
-            logRecords(it).document(record.id).get()
-                .onSuccessTask { doc ->
-                    val existing = doc.toObjectWithId<HitchLogRecord>()
-                    val updatedRecord = if (existing.time == record.time) {
-                        record
-                    } else {
-                        record.copy(time = getNextTime(record.time))
-                    }
-
-                    logRecords(it).document(record.id).set(updatedRecord)
-                }
-        } ?: Log.e("HitchLogViewModel", "No current log")
+    fun addRecord(logId: String, record: HitchLogRecord) = repositoryFlow {
+        logRecords(logId).add(record.copy(time = getNextTime(logId, record.time))).await()
     }
 
-    fun deleteRecord(record: HitchLogRecord) {
-        currentLogId?.let {
-            logRecords(it).document(record.id).delete()
-        } ?: Log.e("HitchLogViewModel", "No current log")
-    }
+    fun updateRecord(logId: String, record: HitchLogRecord) = repositoryFlow {
+        val existing = logRecords(logId).document(record.id).get().await().toObjectWithId<HitchLogRecord>()
 
-    fun saveRecord(record: HitchLogRecord) {
-        when {
-            record.id.isEmpty() -> addRecord(record)
-            else -> updateRecord(record)
+        val updatedRecord = if (existing.time == record.time) {
+            record
+        } else {
+            record.copy(time = getNextTime(logId, record.time))
         }
+
+        logRecords(logId).document(record.id).set(updatedRecord).await()
     }
 
-    private fun getNextTime(enteredTime: Date): Date {
-        return recordsLiveData.value?.filter {
-            it.time.toMinutes() == enteredTime
-        }?.maxByOrNull { it.time }?.time?.addSecond()
-            ?: enteredTime
+    fun deleteRecord(logId: String, record: HitchLogRecord) = repositoryFlow {
+        logRecords(logId).document(record.id).delete().await()
+    }
+
+    fun saveRecord(logId: String, record: HitchLogRecord) =
+        when {
+            record.id.isEmpty() -> addRecord(logId, record)
+            else -> updateRecord(logId, record)
+        }
+
+    private suspend fun getNextTime(logId: String, enteredTime: Date): Date {
+        return logRecords(logId)
+            .whereGreaterThanOrEqualTo("time", enteredTime.time)
+            .whereLessThan("time", enteredTime.addMinute().time)
+            .get(Source.CACHE)
+            .await()
+            .toObjectsWithId<HitchLogRecord>()
+            .maxByOrNull { it.time }?.time?.addSecond() ?: enteredTime
     }
 
     private fun Date.addSecond(): Date = Date(time + 1000)
+    private fun Date.addMinute(): Date = Date(time + 60000)
 }
 
 @SuppressLint("SimpleDateFormat")
