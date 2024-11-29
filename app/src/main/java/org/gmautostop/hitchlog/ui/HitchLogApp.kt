@@ -9,12 +9,11 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import org.gmautostop.hitchlog.AuthViewModel
 import org.gmautostop.hitchlog.EditLogViewModel
@@ -23,16 +22,14 @@ import org.gmautostop.hitchlog.HitchLogViewModel
 import org.gmautostop.hitchlog.RecordViewModel
 import org.gmautostop.hitchlog.ui.theme.HitchlogTheme
 
-@Preview
 @Composable
-fun HitchLogApp() {
+fun HitchLogApp(navController: NavHostController) {
     HitchlogTheme {
         // A surface container using the 'background' color from the theme
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colors.background
         ) {
-            val navController = rememberNavController()
             val authViewModel: AuthViewModel = hiltViewModel()
 
             val startDestination = when {
